@@ -9,17 +9,17 @@
 #include <fcntl.h>
 #include <stdlib.h>
 
-static const char *hello_str = "Hello World!\n";
-static const char *hello_path = "/hello";
-
+/* Strings representing our folder structure. */
 static const char *bar_path = "/bar";
 static const char *foo_path = "/foo";
 static const char *baz_path = "/baz";
 static const char *bin_path = "/bar/bin";
 
+/* Example file with sample text */
 static const char *example_path = "/baz/example";
 static const char *example_str = "Hello world\n";
 
+/* Filename and it's text from 11 lines (as number of last to figures of zachoDka) */
 static const char *test_path = "/foo/test.txt";
 static const char *test_str = "She was, my Lord; and only Isabel\n\
 Was all the daughters that this Phillip had,\n\
@@ -33,14 +33,17 @@ The French obscured your mother's Privilege,\n\
 And, though she were the next of blood, proclaimed\n\
 John, of the house of Valois, now their king\n";
 
+/* Obvious :-) */
 static const char *readme_path = "/bar/bin/readme.txt";
 static const char *readme_str = "Student Yevhenia Sakovets, 1111\n";
 
+/* Path to binary file */
 static const char *paste_path = "/bar/bin/paste";
 
 static int paste_fd;
 static struct stat stbufs[1204];
 
+/* Supplementary function for checking rights of file */
 int check_rights(int flags, int mode)
 {
 	mode = mode & 0777;
@@ -54,17 +57,22 @@ int check_rights(int flags, int mode)
 		return -EACCES;
 }
 
+/* Get attributs of file */
 static int fs_getattr(const char *path, struct stat *stbuf)
 {
     int res = 0;
 
+	/* Default: did not set attributes */
 	static int is_set[1024];
 
     memset(stbuf, 0, sizeof(struct stat));
 	
+	/* Setting owner of file and group owner */
 	stbuf->st_uid = getuid();
 	stbuf->st_gid = getuid();
 
+	/* Checking path, checking set flag and setting or just getting attributes
+	 * Result returned at stbuf pointer */
     if(strcmp(path, "/") == 0) {
 		if (!is_set[0]) {
         	stbuf->st_mode = S_IFDIR | 0777;
@@ -170,12 +178,15 @@ static int fs_getattr(const char *path, struct stat *stbuf)
 			memcpy(stbuf, &stbufs[8], sizeof(struct stat));
 		}
 	}
-    else
+    else {
+		/* Return -ENOENT if file does not exist */
         res = -ENOENT;
+	}
 
     return res;
 }
 
+/* Reading content of directory. Returning predefined values. Check rights while accessing files. */
 static int fs_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
                          off_t offset, struct fuse_file_info *fi)
 {
@@ -236,6 +247,7 @@ static int fs_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
     return 0;
 }
 
+/* Checking rights while opening files. */
 static int fs_open(const char *path, struct fuse_file_info *fi)
 {
 	if(strcmp(path, "/") == 0) {
@@ -282,6 +294,7 @@ static int fs_open(const char *path, struct fuse_file_info *fi)
 	return 0;
 }
 
+/* Faking files data here. */
 static int fs_read(const char *path, char *buf, size_t size, off_t offset,
                       struct fuse_file_info *fi)
 {
@@ -333,6 +346,7 @@ static int fs_read(const char *path, char *buf, size_t size, off_t offset,
     return size;
 }
 
+/* Our callback function from chmod. We're saving modes in array of stat structures. */
 static int fs_chmod(const char *path, mode_t bits)
 {
 	int res;
@@ -377,6 +391,7 @@ static int fs_release(const char *path, struct fuse_file_info *fi)
 	}
 }
 
+/* Assigning here our callback functions */
 static struct fuse_operations fs_oper = {
     .getattr	= fs_getattr,
 	.chmod		= fs_chmod,
@@ -386,7 +401,12 @@ static struct fuse_operations fs_oper = {
     .readdir	= fs_readdir,
 };
 
+/* Main function, obvious :-) */
 int main(int argc, char *argv[])
 {
+	/* Calling main fuse function from here.
+	 * It mounting fuse filesystem and process
+	 * everything with our callback functions
+	 */
     return fuse_main(argc, argv, &fs_oper, NULL);
 }
